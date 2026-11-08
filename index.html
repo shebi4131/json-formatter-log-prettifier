@@ -1,0 +1,1219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>JSON Formatter &amp; Log Prettifier</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #e9edee;
+        --bg-deep: #dde3e5;
+        --panel: #ffffff;
+        --panel-2: #f3f5f6;
+        --panel-3: #eceff0;
+        --ink: #171c20;
+        --ink-2: #3c454c;
+        --muted: #66727b;
+        --faint: #8b979f;
+        --line: #d3dadc;
+        --line-strong: #b9c4c8;
+        --accent: #0f766e;
+        --accent-hover: #115e59;
+        --accent-soft: #d9efec;
+        --accent-ink: #ffffff;
+        --danger: #c2261f;
+        --danger-soft: #fdecea;
+        --danger-line: #f2b8b3;
+        --warn: #b45309;
+        --warn-soft: #fdf0dc;
+        --ok: #157347;
+        --ok-soft: #e2f2e7;
+        --info: #0369a1;
+        --info-soft: #e1f0fa;
+        --debug: #6d4fc2;
+        --debug-soft: #ece7fa;
+        --s-key: #0451a5;
+        --s-str: #a31515;
+        --s-num: #098658;
+        --s-bool: #0000cc;
+        --s-null: #6b7280;
+        --gutter-bg: #f3f5f6;
+        --shadow: 0 1px 2px rgba(23, 28, 32, 0.06), 0 10px 28px -18px rgba(23, 28, 32, 0.35);
+        --radius: 10px;
+        --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0d1113;
+          --bg-deep: #090c0e;
+          --panel: #161b1e;
+          --panel-2: #1b2125;
+          --panel-3: #21282d;
+          --ink: #e8edef;
+          --ink-2: #c3ced3;
+          --muted: #93a1a9;
+          --faint: #6d7c84;
+          --line: #293237;
+          --line-strong: #3a454c;
+          --accent: #2dd4bf;
+          --accent-hover: #5eead4;
+          --accent-soft: #11322e;
+          --accent-ink: #052e2a;
+          --danger: #f08a84;
+          --danger-soft: #3a1d1b;
+          --danger-line: #6e3531;
+          --warn: #f0b269;
+          --warn-soft: #38290f;
+          --ok: #7fd6a4;
+          --ok-soft: #173325;
+          --info: #7cc4ee;
+          --info-soft: #15303f;
+          --debug: #bda8f2;
+          --debug-soft: #2c2547;
+          --s-key: #9cdcfe;
+          --s-str: #ce9178;
+          --s-num: #b5cea8;
+          --s-bool: #569cd6;
+          --s-null: #808a91;
+          --gutter-bg: #12171a;
+          --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 30px -18px rgba(0, 0, 0, 0.7);
+        }
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: var(--sans);
+        background: var(--bg);
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+      }
+      button { font-family: inherit; cursor: pointer; }
+      input, select, textarea { font-family: inherit; }
+      :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+      .app { max-width: 1440px; margin: 0 auto; padding: 20px 20px 40px; }
+
+      /* ---------- Intro ---------- */
+      .intro { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 28px; margin: 4px 2px 16px; }
+      .intro h1 { font-size: 26px; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+      .intro p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; max-width: 560px; }
+      .intro p code { font-family: var(--mono); font-size: 12px; background: var(--panel-3); padding: 1px 5px; border-radius: 4px; color: var(--ink-2); }
+
+      /* ---------- Toolbar ---------- */
+      .toolbar {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 12px;
+        display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+      }
+      .mode-switch {
+        display: inline-flex; background: var(--panel-3); border: 1px solid var(--line);
+        border-radius: 8px; padding: 3px; gap: 3px;
+      }
+      .mode-switch button {
+        border: 0; background: transparent; color: var(--muted);
+        font-size: 13.5px; font-weight: 600; padding: 7px 16px; border-radius: 6px;
+        display: inline-flex; align-items: center; gap: 7px;
+      }
+      .mode-switch button .mode-glyph { font-family: var(--mono); font-weight: 700; font-size: 12px; }
+      .mode-switch button[aria-selected="true"] { background: var(--panel); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.14); }
+      .mode-switch button[aria-selected="true"] .mode-glyph { color: var(--accent); }
+
+      .tool-group { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .tool-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+      .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+      .seg button {
+        border: 0; border-right: 1px solid var(--line); background: var(--panel); color: var(--muted);
+        font-family: var(--mono); font-size: 12.5px; font-weight: 500; padding: 6px 12px;
+      }
+      .seg button:last-child { border-right: 0; }
+      .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+      @media (prefers-color-scheme: dark) { .seg button[aria-pressed="true"] { color: var(--accent); } }
+
+      .toggle-btn {
+        border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+        font-size: 13px; font-weight: 500; padding: 6px 12px; border-radius: 7px;
+        display: inline-flex; align-items: center; gap: 7px;
+      }
+      .toggle-btn .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); flex: none; }
+      .toggle-btn[aria-pressed="true"] { color: var(--ink); border-color: var(--accent); background: var(--accent-soft); }
+      .toggle-btn[aria-pressed="true"] .dot { background: var(--accent); }
+
+      .toolbar-spacer { flex: 1 1 auto; }
+      .actions { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+      .btn {
+        border: 1px solid var(--line); background: var(--panel); color: var(--ink-2);
+        font-size: 13.5px; font-weight: 600; padding: 8px 15px; border-radius: 8px;
+        display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+      }
+      .btn:hover { border-color: var(--line-strong); background: var(--panel-2); }
+      .btn:active { transform: translateY(1px); }
+      .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+      .btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+      .btn svg { width: 15px; height: 15px; flex: none; }
+
+      .search-wrap { position: relative; }
+      .search-wrap svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--faint); pointer-events: none; }
+      .search-input {
+        border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+        border-radius: 7px; padding: 7px 10px 7px 29px; font-size: 13px; width: 190px;
+      }
+      .search-input::placeholder { color: var(--faint); }
+      .hidden { display: none !important; }
+      /* File inputs must NOT be display:none — label/programmatic activation of a
+         display:none file input is blocked in several mobile webviews, which made
+         "Open file" taps silently do nothing. Visually-hide it instead. */
+      .visually-hidden {
+        position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+        overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+        white-space: nowrap; border: 0; opacity: 0; pointer-events: none;
+      }
+
+      /* ---------- Workbench ---------- */
+      .workbench { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; align-items: stretch; }
+      .pane {
+        background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+        box-shadow: var(--shadow); display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+      }
+      .pane.dragging { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+      .pane-head {
+        display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+        padding: 9px 12px; border-bottom: 1px solid var(--line); background: var(--panel-2);
+      }
+      .pane-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); display: inline-flex; align-items: center; gap: 8px; }
+      .pane-title .traffic { display: inline-flex; gap: 5px; }
+      .pane-title .traffic i { width: 9px; height: 9px; border-radius: 50%; display: block; }
+      .pane-meta { font-family: var(--mono); font-size: 11.5px; color: var(--faint); }
+      .pane-head .spacer { flex: 1; }
+      .mini-btn {
+        border: 1px solid transparent; background: transparent; color: var(--muted);
+        font-size: 12.5px; font-weight: 500; padding: 5px 9px; border-radius: 6px;
+        display: inline-flex; align-items: center; gap: 5px;
+      }
+      .mini-btn:hover { background: var(--panel-3); color: var(--ink); }
+      .mini-btn svg { width: 13px; height: 13px; }
+      .mini-btn.solid { border-color: var(--line); background: var(--panel); color: var(--ink-2); font-weight: 600; }
+      .mini-btn.solid:hover { border-color: var(--accent); color: var(--accent); }
+      .mini-btn:disabled { opacity: 0.45; cursor: default; }
+      .mini-btn:disabled:hover { background: transparent; color: var(--muted); border-color: var(--line); }
+
+      .status-pill {
+        font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+        display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); color: var(--muted); background: var(--panel);
+      }
+      .status-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--line-strong); }
+      .status-pill.ok { color: var(--ok); background: var(--ok-soft); border-color: transparent; }
+      .status-pill.ok::before { background: var(--ok); }
+      .status-pill.err { color: var(--danger); background: var(--danger-soft); border-color: transparent; }
+      .status-pill.err::before { background: var(--danger); }
+
+      .editor-body { display: flex; height: 480px; min-height: 0; }
+      .gutter {
+        font-family: var(--mono); font-size: 12.5px; line-height: 1.65; color: var(--faint);
+        background: var(--gutter-bg); border-right: 1px solid var(--line);
+        padding: 14px 10px 14px 14px; text-align: right; overflow: hidden; user-select: none;
+        white-space: pre; flex: none; min-width: 46px;
+      }
+      .gutter .ln-err { color: var(--danger); font-weight: 700; }
+      textarea.code-input {
+        flex: 1; min-width: 0; border: 0; resize: none; outline: none;
+        font-family: var(--mono); font-size: 12.5px; line-height: 1.65;
+        padding: 14px 16px; background: var(--panel); color: var(--ink);
+        white-space: pre; overflow: auto; caret-color: var(--accent);
+      }
+      textarea.code-input.wrap { white-space: pre-wrap; }
+      textarea.code-input::placeholder { color: var(--faint); }
+
+      .out-scroll { height: 480px; overflow: auto; display: flex; align-items: flex-start; }
+      .out-gutter {
+        font-family: var(--mono); font-size: 12.5px; line-height: 1.65; color: var(--faint);
+        background: var(--gutter-bg); border-right: 1px solid var(--line);
+        padding: 14px 10px 14px 14px; text-align: right; user-select: none; white-space: pre;
+        flex: none; min-width: 46px; position: sticky; left: 0; align-self: stretch;
+      }
+      pre.out-code {
+        margin: 0; padding: 14px 16px; flex: 1; min-width: 0;
+        font-family: var(--mono); font-size: 12.5px; line-height: 1.65; color: var(--ink);
+        white-space: pre;
+      }
+      .out-scroll.wrap pre.out-code { white-space: pre-wrap; word-break: break-word; }
+      .tok-key { color: var(--s-key); }
+      .tok-str { color: var(--s-str); }
+      .tok-num { color: var(--s-num); }
+      .tok-bool { color: var(--s-bool); font-weight: 600; }
+      .tok-null { color: var(--s-null); font-style: italic; }
+      .err-line { background: var(--danger-soft); display: block; margin: 0 -16px; padding: 0 16px; }
+
+      .empty-state {
+        height: 480px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 10px; text-align: center; padding: 30px; color: var(--muted);
+      }
+      .empty-state .glyph {
+        font-family: var(--mono); font-size: 30px; font-weight: 700; color: var(--line-strong);
+        border: 1.5px dashed var(--line-strong); border-radius: 10px; padding: 12px 22px;
+      }
+      .empty-state p { margin: 0; font-size: 13.5px; line-height: 1.55; max-width: 300px; }
+      .empty-state kbd {
+        font-family: var(--mono); font-size: 11px; background: var(--panel-3); border: 1px solid var(--line);
+        border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; color: var(--ink-2);
+      }
+
+      /* ---------- Error banner ---------- */
+      .error-banner {
+        margin-top: 14px; border: 1px solid var(--danger-line); background: var(--danger-soft);
+        border-radius: var(--radius); padding: 13px 16px; display: flex; gap: 14px; align-items: flex-start;
+      }
+      .error-banner .err-icon {
+        flex: none; width: 30px; height: 30px; border-radius: 8px; background: var(--danger); color: #fff;
+        display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-weight: 700; font-size: 16px;
+      }
+      .error-banner h2 { margin: 0 0 3px; font-size: 14.5px; color: var(--danger); font-weight: 700; }
+      .error-banner .err-msg { font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); line-height: 1.5; word-break: break-word; }
+      .error-banner .err-loc { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+      .snippet {
+        margin-top: 10px; background: var(--panel); border: 1px solid var(--danger-line); border-radius: 8px;
+        font-family: var(--mono); font-size: 12.5px; line-height: 1.6; padding: 10px 12px; overflow-x: auto; white-space: pre; color: var(--ink);
+      }
+      .snippet .caret { color: var(--danger); font-weight: 700; }
+
+      /* ---------- Stats strip ---------- */
+      .stats {
+        margin-top: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+        box-shadow: var(--shadow); padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px 34px; align-items: center;
+      }
+      .stat { display: flex; flex-direction: column; gap: 1px; }
+      .stat .v { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--ink); }
+      .stat .k { font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+      .stat .v.good { color: var(--ok); }
+      .stat .v.bad { color: var(--danger); }
+
+      /* ---------- Log output ---------- */
+      .log-scroll { height: 480px; overflow: auto; padding: 10px 0; }
+      .log-row {
+        display: grid; grid-template-columns: 168px 74px 1fr; gap: 10px; align-items: baseline;
+        padding: 6px 14px; border-bottom: 1px solid var(--panel-3); font-size: 12.5px;
+      }
+      .log-row:hover { background: var(--panel-2); }
+      .log-time { font-family: var(--mono); color: var(--faint); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .log-msg { font-family: var(--mono); color: var(--ink); line-height: 1.55; word-break: break-word; white-space: pre-wrap; min-width: 0; }
+      .log-msg mark { background: var(--warn-soft); color: inherit; border-radius: 2px; padding: 0 1px; }
+      .log-json {
+        grid-column: 3; margin: 4px 0 6px; background: var(--panel-2); border: 1px solid var(--line);
+        border-radius: 8px; padding: 10px 12px; font-family: var(--mono); font-size: 12px; line-height: 1.6;
+        white-space: pre; overflow-x: auto;
+      }
+      .log-json.wrap { white-space: pre-wrap; word-break: break-word; }
+      .lvl {
+        font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em;
+        padding: 2px 0; border-radius: 5px; text-align: center; width: 74px;
+      }
+      .lvl-error, .lvl-fatal { color: var(--danger); background: var(--danger-soft); }
+      .lvl-warn { color: var(--warn); background: var(--warn-soft); }
+      .lvl-info { color: var(--info); background: var(--info-soft); }
+      .lvl-debug, .lvl-trace { color: var(--debug); background: var(--debug-soft); }
+      .lvl-other { color: var(--muted); background: var(--panel-3); }
+      .row-error { background: color-mix(in srgb, var(--danger-soft) 45%, transparent); }
+      .filter-chips { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+      .chip {
+        border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+        font-family: var(--mono); font-size: 11.5px; font-weight: 600; padding: 5px 11px; border-radius: 999px;
+      }
+      .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+      .chip .n { opacity: 0.65; font-weight: 400; }
+
+      .shortcuts { margin-top: 14px; color: var(--faint); font-size: 12px; display: flex; flex-wrap: wrap; gap: 6px 20px; padding: 0 2px; }
+      .shortcuts kbd {
+        font-family: var(--mono); font-size: 11px; background: var(--panel); border: 1px solid var(--line);
+        border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; color: var(--ink-2);
+      }
+
+      .toast {
+        position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 16px);
+        background: var(--ink); color: var(--bg); font-size: 13.5px; font-weight: 600;
+        padding: 10px 18px; border-radius: 9px; opacity: 0; pointer-events: none;
+        transition: opacity 0.2s ease, transform 0.2s ease; z-index: 50; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        display: flex; align-items: center; gap: 8px; max-width: calc(100vw - 32px); text-align: center;
+      }
+      .toast.show { opacity: 1; transform: translate(-50%, 0); }
+      .toast svg { width: 15px; height: 15px; flex: none; }
+
+      @media (max-width: 920px) {
+        .app { padding: 14px 12px 32px; }
+        .intro h1 { font-size: 22px; }
+        .workbench { grid-template-columns: 1fr; }
+        .editor-body, .out-scroll, .log-scroll, .empty-state { height: 340px; }
+        .log-row { grid-template-columns: 64px 1fr; }
+        .log-time { display: none; }
+        .log-json { grid-column: 2; }
+        .search-input { width: 150px; }
+        .toolbar-spacer { display: none; }
+        .actions { width: 100%; }
+        .actions .btn { flex: 1; justify-content: center; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .toast { transition: none; }
+        .btn:active { transform: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <!-- Intro -->
+      <div class="intro">
+        <h1>Make messy JSON &amp; logs readable.</h1>
+        <p>
+          Paste on the left, get clean output on the right. Format, validate and minify JSON with
+          precise error locations — or colour-code raw server logs and expand the JSON buried in them.
+          Everything runs locally in this page; press <code>⌘/Ctrl + Enter</code> to format.
+        </p>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="mode-switch" role="tablist" aria-label="Tool mode">
+          <button id="tab-json" role="tab" aria-selected="true"><span class="mode-glyph">{ }</span> JSON</button>
+          <button id="tab-log" role="tab" aria-selected="false"><span class="mode-glyph">≡</span> Logs</button>
+        </div>
+
+        <!-- JSON options -->
+        <div class="tool-group" id="json-options">
+          <span class="tool-label" id="indent-label">Indent</span>
+          <div class="seg" role="group" aria-labelledby="indent-label">
+            <button data-indent="2" aria-pressed="true">2 sp</button>
+            <button data-indent="4" aria-pressed="false">4 sp</button>
+            <button data-indent="tab" aria-pressed="false">Tab</button>
+          </div>
+          <button class="toggle-btn" id="sort-toggle" aria-pressed="false"><span class="dot"></span>Sort keys</button>
+          <button class="toggle-btn" id="wrap-toggle" aria-pressed="true"><span class="dot"></span>Wrap lines</button>
+        </div>
+
+        <!-- Log options -->
+        <div class="tool-group hidden" id="log-options">
+          <div class="filter-chips" id="level-chips" role="group" aria-label="Filter by log level"></div>
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
+            <input class="search-input" id="log-search" type="search" placeholder="Filter log text…" aria-label="Filter log text" />
+          </div>
+          <button class="toggle-btn" id="wrap-toggle-log" aria-pressed="true"><span class="dot"></span>Wrap lines</button>
+        </div>
+
+        <div class="toolbar-spacer"></div>
+
+        <div class="actions">
+          <button class="btn" id="sample-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>
+            Load sample
+          </button>
+          <button class="btn" id="minify-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 8-5 4 5 4M15 8l5 4-5 4"/></svg>
+            <span id="minify-label">Minify</span>
+          </button>
+          <button class="btn primary" id="format-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H7a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2 2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1M16 3h1a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2 2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-1"/></svg>
+            <span id="format-label">Format</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Workbench -->
+      <div class="workbench">
+        <!-- Input pane -->
+        <section class="pane" id="input-pane" aria-label="Input">
+          <div class="pane-head">
+            <span class="pane-title">
+              <span class="traffic" aria-hidden="true"><i style="background:#e0655f"></i><i style="background:#e5b95c"></i><i style="background:#6fbf73"></i></span>
+              Input
+            </span>
+            <span class="pane-meta" id="input-meta">0 chars · 0 lines</span>
+            <span class="spacer"></span>
+            <button class="mini-btn" id="paste-btn" title="Paste from clipboard">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+              Paste
+            </button>
+            <button type="button" class="mini-btn" id="open-file-btn" title="Open a .json, .log or .txt file">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0 4 4m-4-4L8 8"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+              Open file
+            </button>
+            <input type="file" id="file-input" accept=".json,.log,.txt,text/plain,application/json" class="visually-hidden" tabindex="-1" aria-hidden="true" />
+            <button class="mini-btn" id="clear-btn" title="Clear input and output">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6"/></svg>
+              Clear
+            </button>
+          </div>
+          <div class="editor-body">
+            <div class="gutter" id="input-gutter" aria-hidden="true">1</div>
+            <textarea
+              class="code-input wrap"
+              id="input"
+              spellcheck="false"
+              autocomplete="off"
+              autocapitalize="off"
+              aria-label="Input text"
+              placeholder="Paste JSON here — e.g. {&quot;name&quot;:&quot;Shebi&quot;,&quot;role&quot;:&quot;developer&quot;} — then hit Format."
+            ></textarea>
+          </div>
+        </section>
+
+        <!-- Output pane -->
+        <section class="pane" id="output-pane" aria-label="Output">
+          <div class="pane-head">
+            <span class="pane-title">Output</span>
+            <span class="status-pill" id="status-pill">Waiting for input</span>
+            <span class="spacer"></span>
+            <button class="mini-btn solid" id="copy-btn" disabled title="Copy the output">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copy output
+            </button>
+            <button class="mini-btn solid" id="download-btn" disabled title="Download the output as a file">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12m0 0 4-4m-4 4-4-4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+              Download
+            </button>
+          </div>
+
+          <div class="empty-state" id="empty-state">
+            <div class="glyph" id="empty-glyph">{ ; }</div>
+            <p id="empty-text">Formatted output appears here, syntax-highlighted and ready to copy. Nothing leaves your browser.</p>
+            <p><kbd>⌘/Ctrl</kbd> + <kbd>Enter</kbd> to format · <kbd>⌘/Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>M</kbd> to minify</p>
+          </div>
+
+          <div class="out-scroll wrap hidden" id="json-output-wrap">
+            <div class="out-gutter" id="output-gutter" aria-hidden="true"></div>
+            <pre class="out-code" id="json-output" aria-label="Formatted JSON output"></pre>
+          </div>
+
+          <div class="log-scroll hidden" id="log-output" aria-label="Prettified log output"></div>
+        </section>
+      </div>
+
+      <!-- Error banner -->
+      <div class="error-banner hidden" id="error-banner" role="alert">
+        <div class="err-icon" aria-hidden="true">!</div>
+        <div style="min-width:0; flex:1">
+          <h2 id="error-title">Invalid JSON</h2>
+          <div class="err-msg" id="error-msg"></div>
+          <div class="err-loc" id="error-loc"></div>
+          <div class="snippet hidden" id="error-snippet"></div>
+        </div>
+        <button class="btn" id="jump-btn">Jump to error</button>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats" id="stats-bar" aria-label="Statistics"></div>
+
+      <div class="shortcuts">
+        <span><kbd>⌘/Ctrl</kbd> + <kbd>Enter</kbd> — format / prettify</span>
+        <span><kbd>⌘/Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>M</kbd> — minify (JSON mode)</span>
+        <span><kbd>Tab</kbd> in the editor — inserts spaces</span>
+        <span>Drop a <b>.json</b> or <b>.log</b> file onto the input pane to load it</span>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      <span id="toast-text">Copied</span>
+    </div>
+
+    <script>
+      "use strict";
+
+      /* ============================== State ============================== */
+      var state = {
+        mode: "json", // "json" | "log"
+        indent: "2",
+        sortKeys: false,
+        wrap: true,
+        lastOutput: "", // raw text behind the rendered output (for copy/download)
+        lastValid: false,
+        errorPos: null, // { pos, line, col } for JSON errors
+        logFilter: "ALL",
+        logRows: []
+      };
+
+      /* ============================== Elements ============================== */
+      function $(id) { return document.getElementById(id); }
+      var inputEl = $("input"), gutterEl = $("input-gutter");
+      var jsonOptionsEl = $("json-options"), logOptionsEl = $("log-options");
+      var emptyStateEl = $("empty-state"), jsonWrapEl = $("json-output-wrap");
+      var jsonOutEl = $("json-output"), outGutterEl = $("output-gutter");
+      var logOutEl = $("log-output");
+      var pillEl = $("status-pill"), errorBanner = $("error-banner");
+      var statsEl = $("stats-bar");
+      var copyBtn = $("copy-btn"), downloadBtn = $("download-btn");
+
+      /* ============================== Samples ============================== */
+      var JSON_SAMPLE = [
+        '{"service":"checkout-api","version":"2.4.1","healthy":true,',
+        ' "request":{"id":"req_9f27c1","method":"POST","path":"/api/orders",',
+        ' "headers":{"content-type":"application/json","x-region":"eu-west"},',
+        ' "body":{"items":[{"sku":"KB-2040","qty":1,"price":129.99},{"sku":"MS-118","qty":2,"price":24.5}],',
+        ' "coupon":null,"giftWrap":false}},',
+        ' "response":{"status":201,"ms":86,"body":{"orderId":"ord_55182","total":178.99,"currency":"USD"}},',
+        ' "tags":["orders","payments","priority"]}'
+      ].join("\n");
+
+      var JSON_BROKEN_SAMPLE = [
+        '{',
+        '  "user": "shebi",',
+        '  "role": "developer",',
+        '  "skills": ["JavaScript", "Python",],',
+        '  "active": true',
+        '   "location": "remote"',
+        '}'
+      ].join("\n");
+
+      var LOG_SAMPLE = [
+        "2026-11-08T09:12:04.112Z INFO  Server listening on port 8080 (env=production)",
+        "2026-11-08T09:12:04.318Z INFO  Connected to database postgres://db.internal:5432/app",
+        "2026-11-08T09:12:07.940Z DEBUG Cache miss for key session:8841, fetching from store",
+        '2026-11-08T09:12:08.102Z INFO  Request completed {"method":"GET","path":"/api/users","status":200,"ms":42}',
+        "2026-11-08T09:12:11.556Z WARN  Slow query detected: 1240ms on SELECT * FROM orders WHERE user_id = ?",
+        '2026-11-08T09:12:13.871Z ERROR Payment gateway timeout after 3000ms {"orderId":"ord_55182","gateway":"stripe","attempt":2}',
+        "2026-11-08T09:12:13.874Z ERROR Failed to charge card for order ord_55182 — retrying with backoff",
+        "2026-11-08T09:12:15.020Z INFO  Retry succeeded, payment captured for order ord_55182",
+        "2026-11-08T09:12:19.664Z WARN  Disk usage at 82% on volume /data",
+        '2026-11-08T09:12:22.410Z INFO  Job nightly-rollup finished {"processed":18422,"failed":3,"durationSec":97}',
+        "2026-11-08T09:12:25.999Z FATAL Worker 3 exited with code 137 (out of memory), restarting",
+        "2026-11-08T09:12:26.410Z INFO  Worker 3 restarted, pool healthy (4/4 workers)"
+      ].join("\n");
+
+      /* ============================== Helpers ============================== */
+      function escapeHtml(s) {
+        return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      }
+      function fmtBytes(n) {
+        if (n < 1024) return n + " B";
+        return (n / 1024).toFixed(1).replace(/\.0$/, "") + " KB";
+      }
+      function fmtNum(n) { return n.toLocaleString("en-US"); }
+
+      var toastTimer = null;
+      function toast(msg) {
+        $("toast-text").textContent = msg;
+        var t = $("toast");
+        t.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2200);
+      }
+
+      function indentStr() {
+        if (state.indent === "tab") return "\t";
+        return new Array(parseInt(state.indent, 10) + 1).join(" ");
+      }
+
+      function sortDeep(v) {
+        if (Array.isArray(v)) return v.map(sortDeep);
+        if (v && typeof v === "object") {
+          var out = {};
+          Object.keys(v).sort().forEach(function (k) { out[k] = sortDeep(v[k]); });
+          return out;
+        }
+        return v;
+      }
+
+      /* Line/col from a character offset */
+      function lineCol(text, pos) {
+        var upto = text.slice(0, pos);
+        var lines = upto.split("\n");
+        return { line: lines.length, col: lines[lines.length - 1].length + 1 };
+      }
+
+      /* Extract an error position from a JSON.parse error, per engine */
+      function errorPosition(err, text) {
+        var m = /position\s+(\d+)/i.exec(err.message || "");
+        if (m) {
+          var pos = Math.min(parseInt(m[1], 10), text.length);
+          var lc = lineCol(text, pos);
+          return { pos: pos, line: lc.line, col: lc.col };
+        }
+        m = /line\s+(\d+)\s+column\s+(\d+)/i.exec(err.message || "");
+        if (m) { // Firefox style
+          var line = parseInt(m[1], 10), col = parseInt(m[2], 10);
+          var lines = text.split("\n");
+          var pos = 0;
+          for (var i = 0; i < line - 1 && i < lines.length; i++) pos += lines[i].length + 1;
+          pos += col - 1;
+          return { pos: pos, line: line, col: col };
+        }
+        return null;
+      }
+
+      /* ====================== JSON syntax highlighting ====================== */
+      function highlightJSON(json) {
+        var esc = escapeHtml(json);
+        return esc.replace(
+          /("(\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false)\b|\bnull\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+          function (match) {
+            var cls = "tok-num";
+            if (match.charAt(0) === '"') {
+              cls = /:\s*$/.test(match) ? "tok-key" : "tok-str";
+            } else if (match === "true" || match === "false") {
+              cls = "tok-bool";
+            } else if (match === "null") {
+              cls = "tok-null";
+            }
+            return '<span class="' + cls + '">' + match + "</span>";
+          }
+        );
+      }
+
+      /* ============================== Input gutter ============================== */
+      function renderGutter() {
+        var text = inputEl.value;
+        var count = text === "" ? 1 : text.split("\n").length;
+        var errLine = state.errorPos ? state.errorPos.line : -1;
+        var parts = [];
+        for (var i = 1; i <= count; i++) {
+          parts.push(i === errLine ? '<span class="ln-err">' + i + "</span>" : String(i));
+        }
+        gutterEl.innerHTML = parts.join("\n");
+        gutterEl.scrollTop = inputEl.scrollTop;
+        var lines = text === "" ? 0 : count;
+        $("input-meta").textContent = fmtNum(text.length) + " chars · " + fmtNum(lines) + (lines === 1 ? " line" : " lines");
+      }
+      inputEl.addEventListener("scroll", function () { gutterEl.scrollTop = inputEl.scrollTop; });
+
+      /* Tab inserts spaces instead of moving focus */
+      inputEl.addEventListener("keydown", function (e) {
+        if (e.key === "Tab") {
+          e.preventDefault();
+          var s = inputEl.selectionStart, en = inputEl.selectionEnd;
+          var ins = state.indent === "tab" ? "\t" : (state.indent === "4" ? "    " : "  ");
+          inputEl.setRangeText(ins, s, en, "end");
+          onInput();
+        }
+      });
+
+      /* ============================== Status / errors ============================== */
+      function setPill(kind, text) {
+        pillEl.className = "status-pill" + (kind ? " " + kind : "");
+        pillEl.textContent = text;
+      }
+      function hideError() {
+        errorBanner.classList.add("hidden");
+        state.errorPos = null;
+      }
+      function showError(err, text) {
+        var pos = errorPosition(err, text);
+        state.errorPos = pos;
+        $("error-msg").textContent = err.message;
+        if (pos) {
+          $("error-loc").textContent = "Line " + pos.line + ", column " + pos.col + " (character " + fmtNum(pos.pos + 1) + " of " + fmtNum(text.length) + ")";
+          var lines = text.split("\n");
+          var badLine = lines[pos.line - 1] || "";
+          var caretPad = new Array(Math.max(pos.col, 1)).join(" ");
+          $("error-snippet").innerHTML =
+            escapeHtml(badLine) + "\n" + '<span class="caret">' + escapeHtml(caretPad) + "^ — error here</span>";
+          $("error-snippet").classList.remove("hidden");
+          $("jump-btn").classList.remove("hidden");
+        } else {
+          $("error-loc").textContent = "The parser didn't report an exact position for this error.";
+          $("error-snippet").classList.add("hidden");
+          $("jump-btn").classList.add("hidden");
+        }
+        errorBanner.classList.remove("hidden");
+        renderGutter();
+      }
+      $("jump-btn").addEventListener("click", function () {
+        if (!state.errorPos) return;
+        inputEl.focus();
+        inputEl.setSelectionRange(state.errorPos.pos, Math.min(state.errorPos.pos + 1, inputEl.value.length));
+        var ratio = state.errorPos.line / Math.max(inputEl.value.split("\n").length, 1);
+        inputEl.scrollTop = ratio * inputEl.scrollHeight - inputEl.clientHeight / 2;
+      });
+
+      /* ============================== Output rendering ============================== */
+      function showEmpty() {
+        emptyStateEl.classList.remove("hidden");
+        jsonWrapEl.classList.add("hidden");
+        logOutEl.classList.add("hidden");
+        state.lastOutput = "";
+        copyBtn.disabled = true;
+        downloadBtn.disabled = true;
+      }
+      function showJsonOutput(text, errLine) {
+        emptyStateEl.classList.add("hidden");
+        logOutEl.classList.add("hidden");
+        jsonWrapEl.classList.remove("hidden");
+        var highlighted = highlightJSON(text);
+        var linesHtml = highlighted.split("\n");
+        if (errLine && linesHtml[errLine - 1] !== undefined) {
+          linesHtml[errLine - 1] = '<span class="err-line">' + linesHtml[errLine - 1] + "</span>";
+        }
+        jsonOutEl.innerHTML = linesHtml.join("\n");
+        var nums = [];
+        for (var i = 1; i <= linesHtml.length; i++) nums.push(i);
+        outGutterEl.textContent = nums.join("\n");
+        state.lastOutput = text;
+        copyBtn.disabled = false;
+        downloadBtn.disabled = false;
+      }
+
+      function renderStats(items) {
+        statsEl.innerHTML = items.map(function (it) {
+          return '<div class="stat"><span class="v' + (it.cls ? " " + it.cls : "") + '">' + it.v + '</span><span class="k">' + it.k + "</span></div>";
+        }).join("");
+      }
+      function jsonStats(value, inText, outText, valid) {
+        var keys = 0, arrays = 0, objects = 0, strings = 0, numbers = 0, bools = 0, nulls = 0, maxDepth = 0;
+        (function walk(v, d) {
+          if (d > maxDepth) maxDepth = d;
+          if (Array.isArray(v)) { arrays++; v.forEach(function (x) { walk(x, d + 1); }); }
+          else if (v && typeof v === "object") {
+            objects++;
+            Object.keys(v).forEach(function (k) { keys++; walk(v[k], d + 1); });
+          }
+          else if (typeof v === "string") strings++;
+          else if (typeof v === "number") numbers++;
+          else if (typeof v === "boolean") bools++;
+          else if (v === null) nulls++;
+        })(value, 1);
+        var delta = inText.length ? Math.round((outText.length / inText.length) * 100) : 100;
+        return [
+          { v: valid ? "Valid" : "Invalid", k: "JSON check", cls: valid ? "good" : "bad" },
+          { v: fmtNum(keys), k: "Keys" },
+          { v: fmtNum(objects), k: "Objects" },
+          { v: fmtNum(arrays), k: "Arrays" },
+          { v: fmtNum(strings + numbers + bools + nulls), k: "Values" },
+          { v: fmtNum(maxDepth), k: "Max depth" },
+          { v: fmtBytes(inText.length) + " → " + fmtBytes(outText.length), k: "Size (" + delta + "%)" },
+          { v: fmtNum(outText ? outText.split("\n").length : 0), k: "Output lines" }
+        ];
+      }
+      function defaultStats() {
+        if (state.mode === "json") {
+          renderStats([
+            { v: "—", k: "JSON check" }, { v: "0", k: "Keys" }, { v: "0", k: "Objects" },
+            { v: "0", k: "Arrays" }, { v: "0", k: "Values" }, { v: "0", k: "Max depth" },
+            { v: "0 B", k: "Size" }, { v: "0", k: "Output lines" }
+          ]);
+        } else {
+          renderStats([
+            { v: "0", k: "Log lines" }, { v: "0", k: "Errors" }, { v: "0", k: "Warnings" },
+            { v: "0", k: "Info" }, { v: "0", k: "With JSON payload" }, { v: "0", k: "Showing" }
+          ]);
+        }
+      }
+
+      /* ============================== JSON actions ============================== */
+      function runJSON(action) {
+        var text = inputEl.value;
+        hideError();
+        if (!text.trim()) {
+          setPill("", "Waiting for input");
+          showEmpty();
+          defaultStats();
+          renderGutter();
+          return;
+        }
+        var value;
+        try {
+          value = JSON.parse(text);
+        } catch (err) {
+          setPill("err", "Invalid JSON");
+          showError(err, text);
+          // Still show the raw input in the output, with the bad line marked.
+          showJsonOutput(text, state.errorPos ? state.errorPos.line : null);
+          state.lastValid = false;
+          renderStats([
+            { v: "Invalid", k: "JSON check", cls: "bad" },
+            { v: "—", k: "Keys" }, { v: "—", k: "Objects" }, { v: "—", k: "Arrays" },
+            { v: "—", k: "Values" }, { v: "—", k: "Max depth" },
+            { v: fmtBytes(text.length), k: "Input size" },
+            { v: state.errorPos ? "Line " + state.errorPos.line : "—", k: "Error at" }
+          ]);
+          return;
+        }
+        state.lastValid = true;
+        var prepared = state.sortKeys ? sortDeep(value) : value;
+        var out = action === "minify" ? JSON.stringify(prepared) : JSON.stringify(prepared, null, indentStr());
+        showJsonOutput(out, null);
+        setPill("ok", "Valid JSON");
+        renderStats(jsonStats(prepared, text, out, true));
+        if (action) toast(action === "minify" ? "Minified — " + fmtBytes(out.length) : "Formatted — " + fmtNum(out.split("\n").length) + " lines");
+      }
+      /* Live validation only (no reformat while typing) */
+      function validateLive() {
+        var text = inputEl.value;
+        hideError();
+        if (state.mode !== "json") return;
+        if (!text.trim()) { setPill("", "Waiting for input"); return; }
+        try {
+          JSON.parse(text);
+          state.lastValid = true;
+          setPill("ok", "Valid JSON");
+        } catch (err) {
+          state.lastValid = false;
+          setPill("err", "Invalid JSON");
+          showError(err, text);
+        }
+      }
+
+      /* ============================== Log prettifier ============================== */
+      var LEVEL_RE = /^(?:\[?(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:[.,]\d+)?(?:Z|[+-]\d{2}:?\d{2})?|\d{1,2}:\d{2}:\d{2}(?:[.,]\d+)?)\]?\s+)?\[?(TRACE|DEBUG|INFO|INFORMATION|WARN|WARNING|ERROR|ERR|FATAL|CRITICAL|CRIT)\b\]?\s*[:\-–]?\s*/i;
+
+      function normaliseLevel(raw) {
+        var u = (raw || "").toUpperCase();
+        if (u === "WARNING") return "WARN";
+        if (u === "ERR" || u === "CRIT" || u === "CRITICAL") return "ERROR";
+        if (u === "INFORMATION") return "INFO";
+        return u || "OTHER";
+      }
+
+      function parseLogLine(line) {
+        var m = LEVEL_RE.exec(line);
+        var row = { time: "", level: "OTHER", msg: line, json: null, raw: line };
+        var rest = line;
+        if (m) {
+          row.time = m[1] || "";
+          row.level = normaliseLevel(m[2]);
+          rest = line.slice(m[0].length);
+          row.msg = rest;
+        }
+        // Embedded JSON object/array inside the message
+        var brace = rest.search(/[\{\[]/);
+        if (brace >= 0) {
+          var candidate = rest.slice(brace);
+          try {
+            var parsed = JSON.parse(candidate);
+            if (parsed && typeof parsed === "object") {
+              row.json = parsed;
+              row.msg = rest.slice(0, brace).replace(/[\s:,\-]+$/, "") || rest.slice(0, brace);
+            }
+          } catch (e) { /* not JSON — leave the line as plain text */ }
+        }
+        return row;
+      }
+
+      function levelClass(level) {
+        switch (level) {
+          case "ERROR": return "lvl-error";
+          case "FATAL": return "lvl-fatal";
+          case "WARN": return "lvl-warn";
+          case "INFO": return "lvl-info";
+          case "DEBUG": return "lvl-debug";
+          case "TRACE": return "lvl-trace";
+          default: return "lvl-other";
+        }
+      }
+
+      function highlightSearch(escaped, query) {
+        if (!query) return escaped;
+        var q = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return escaped.replace(new RegExp("(" + q + ")", "gi"), "<mark>$1</mark>");
+      }
+
+      function buildChips(rows) {
+        var counts = { ALL: rows.length };
+        rows.forEach(function (r) { counts[r.level] = (counts[r.level] || 0) + 1; });
+        var order = ["ALL", "ERROR", "FATAL", "WARN", "INFO", "DEBUG", "TRACE", "OTHER"];
+        var html = "";
+        order.forEach(function (lv) {
+          if (lv !== "ALL" && !counts[lv]) return;
+          html += '<button class="chip" data-level="' + lv + '" aria-pressed="' + (state.logFilter === lv) + '">' +
+            lv + ' <span class="n">' + fmtNum(counts[lv] || 0) + "</span></button>";
+        });
+        $("level-chips").innerHTML = html;
+        Array.prototype.forEach.call($("level-chips").querySelectorAll(".chip"), function (chip) {
+          chip.addEventListener("click", function () {
+            state.logFilter = chip.getAttribute("data-level");
+            renderLogs();
+          });
+        });
+      }
+
+      function renderLogs(prettifiedText) {
+        var query = $("log-search").value.trim().toLowerCase();
+        var shown = state.logRows.filter(function (r) {
+          if (state.logFilter !== "ALL" && r.level !== state.logFilter) return false;
+          if (query && r.raw.toLowerCase().indexOf(query) === -1) return false;
+          return true;
+        });
+        buildChips(state.logRows);
+        if (!state.logRows.length) { showEmpty(); return; }
+        emptyStateEl.classList.add("hidden");
+        jsonWrapEl.classList.add("hidden");
+        logOutEl.classList.remove("hidden");
+        if (!shown.length) {
+          logOutEl.innerHTML = '<div class="empty-state" style="height:auto;padding:40px 20px"><p>No log lines match this filter.</p></div>';
+        } else {
+          logOutEl.innerHTML = shown.map(function (r) {
+            var cls = (r.level === "ERROR" || r.level === "FATAL") ? " log-row row-error" : "log-row";
+            var html = '<div class="' + cls + '">' +
+              '<span class="log-time">' + escapeHtml(r.time || "—") + "</span>" +
+              '<span class="lvl ' + levelClass(r.level) + '">' + escapeHtml(r.level) + "</span>" +
+              '<span class="log-msg">' + highlightSearch(escapeHtml(r.msg), query) + "</span>";
+            if (r.json) {
+              var pretty = JSON.stringify(r.json, null, 2);
+              html += '<div class="log-json' + (state.wrap ? " wrap" : "") + '">' + highlightJSON(pretty) + "</div>";
+            }
+            return html + "</div>";
+          }).join("");
+        }
+        // Copy/download in log mode copies the cleaned, prettified plain-text rendering.
+        state.lastOutput = prettifiedText !== undefined ? prettifiedText : buildLogText(shown);
+        copyBtn.disabled = false;
+        downloadBtn.disabled = false;
+        var counts = { ERROR: 0, FATAL: 0, WARN: 0, INFO: 0 };
+        var withJson = 0;
+        state.logRows.forEach(function (r) {
+          if (counts[r.level] !== undefined) counts[r.level]++;
+          if (r.json) withJson++;
+        });
+        renderStats([
+          { v: fmtNum(state.logRows.length), k: "Log lines" },
+          { v: fmtNum(counts.ERROR + counts.FATAL), k: "Errors", cls: counts.ERROR + counts.FATAL ? "bad" : "" },
+          { v: fmtNum(counts.WARN), k: "Warnings", cls: counts.WARN ? "" : "" },
+          { v: fmtNum(counts.INFO), k: "Info" },
+          { v: fmtNum(withJson), k: "With JSON payload" },
+          { v: fmtNum(shown.length), k: "Showing" }
+        ]);
+        setPill(counts.ERROR + counts.FATAL ? "err" : "ok",
+          counts.ERROR + counts.FATAL ? counts.ERROR + counts.FATAL + " error line(s)" : "No errors found");
+      }
+
+      function buildLogText(rows) {
+        return rows.map(function (r) {
+          var line = (r.time ? r.time + "  " : "") + r.level.padEnd(6) + " " + r.msg;
+          if (r.json) line += "\n" + JSON.stringify(r.json, null, 2).split("\n").map(function (l) { return "        " + l; }).join("\n");
+          return line;
+        }).join("\n");
+      }
+
+      function runLogs(announce) {
+        hideError();
+        var text = inputEl.value;
+        if (!text.trim()) {
+          state.logRows = [];
+          setPill("", "Waiting for input");
+          showEmpty();
+          defaultStats();
+          buildChips([]);
+          return;
+        }
+        state.logRows = text.split("\n").filter(function (l) { return l.trim() !== ""; }).map(parseLogLine);
+        renderLogs();
+        if (announce) toast("Prettified " + fmtNum(state.logRows.length) + " log lines");
+      }
+
+      /* ============================== Mode switching ============================== */
+      function setMode(mode) {
+        state.mode = mode;
+        $("tab-json").setAttribute("aria-selected", mode === "json");
+        $("tab-log").setAttribute("aria-selected", mode === "log");
+        jsonOptionsEl.classList.toggle("hidden", mode !== "json");
+        logOptionsEl.classList.toggle("hidden", mode !== "log");
+        $("minify-btn").classList.toggle("hidden", mode !== "json");
+        $("minify-label").textContent = "Minify";
+        $("format-label").textContent = mode === "json" ? "Format" : "Prettify";
+        $("empty-glyph").textContent = mode === "json" ? "{ ; }" : "≡ log";
+        inputEl.placeholder = mode === "json"
+          ? 'Paste JSON here — e.g. {"name":"Shebi","role":"developer"} — then hit Format.'
+          : "Paste raw log lines here — timestamps and levels (INFO, WARN, ERROR…) are detected automatically.";
+        hideError();
+        showEmpty();
+        defaultStats();
+        if (inputEl.value.trim()) {
+          if (mode === "json") runJSON(null); else runLogs(false);
+        } else {
+          setPill("", "Waiting for input");
+        }
+      }
+      $("tab-json").addEventListener("click", function () { setMode("json"); });
+      $("tab-log").addEventListener("click", function () { setMode("log"); });
+
+      /* ============================== Toolbar wiring ============================== */
+      Array.prototype.forEach.call(document.querySelectorAll("[data-indent]"), function (btn) {
+        btn.addEventListener("click", function () {
+          state.indent = btn.getAttribute("data-indent");
+          Array.prototype.forEach.call(document.querySelectorAll("[data-indent]"), function (b) {
+            b.setAttribute("aria-pressed", b === btn);
+          });
+          if (state.mode === "json" && state.lastValid && inputEl.value.trim()) runJSON(null);
+        });
+      });
+      $("sort-toggle").addEventListener("click", function () {
+        state.sortKeys = !state.sortKeys;
+        this.setAttribute("aria-pressed", state.sortKeys);
+        if (state.mode === "json" && state.lastValid && inputEl.value.trim()) runJSON(null);
+      });
+      function applyWrap() {
+        inputEl.classList.toggle("wrap", state.wrap);
+        jsonWrapEl.classList.toggle("wrap", state.wrap);
+        $("wrap-toggle").setAttribute("aria-pressed", state.wrap);
+        $("wrap-toggle-log").setAttribute("aria-pressed", state.wrap);
+        if (state.mode === "log" && state.logRows.length) renderLogs();
+      }
+      $("wrap-toggle").addEventListener("click", function () { state.wrap = !state.wrap; applyWrap(); });
+      $("wrap-toggle-log").addEventListener("click", function () { state.wrap = !state.wrap; applyWrap(); });
+
+      $("format-btn").addEventListener("click", function () {
+        if (state.mode === "json") runJSON("format"); else runLogs(true);
+      });
+      $("minify-btn").addEventListener("click", function () { runJSON("minify"); });
+      $("sample-btn").addEventListener("click", function () {
+        if (state.mode === "json") {
+          // Alternate: valid sample, then the broken one, so the error view is one extra click away.
+          inputEl.value = inputEl.value === JSON_SAMPLE ? JSON_BROKEN_SAMPLE : JSON_SAMPLE;
+          runJSON(null);
+          toast(inputEl.value === JSON_BROKEN_SAMPLE ? "Loaded a broken sample — see the error panel" : "Sample JSON loaded");
+        } else {
+          inputEl.value = LOG_SAMPLE;
+          runLogs(false);
+          toast("Sample logs loaded");
+        }
+        renderGutter();
+        inputEl.focus();
+      });
+      $("clear-btn").addEventListener("click", function () {
+        inputEl.value = "";
+        state.logRows = [];
+        state.logFilter = "ALL";
+        $("log-search").value = "";
+        hideError();
+        setPill("", "Waiting for input");
+        showEmpty();
+        defaultStats();
+        buildChips([]);
+        renderGutter();
+        inputEl.focus();
+      });
+      $("paste-btn").addEventListener("click", function () {
+        if (!navigator.clipboard || !navigator.clipboard.readText) {
+          toast("Clipboard read isn't available here — paste with ⌘/Ctrl+V");
+          inputEl.focus();
+          return;
+        }
+        navigator.clipboard.readText().then(function (t) {
+          if (!t) { toast("Clipboard is empty"); return; }
+          inputEl.value = t;
+          onInput(true);
+          toast("Pasted " + fmtNum(t.length) + " characters");
+        }).catch(function () {
+          toast("Clipboard blocked by the browser — paste with ⌘/Ctrl+V");
+          inputEl.focus();
+        });
+      });
+      /* Open the picker from a real button click so the tap counts as a direct
+         user gesture in every webview (the old <label for> + display:none input
+         silently did nothing when tapped in the mobile in-app browser). */
+      $("open-file-btn").addEventListener("click", function () { $("file-input").click(); });
+      $("file-input").addEventListener("change", function () {
+        var f = this.files && this.files[0];
+        if (!f) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          inputEl.value = String(reader.result || "");
+          if (/\.log$/i.test(f.name) && state.mode === "json") setMode("log");
+          if (/\.json$/i.test(f.name) && state.mode === "log") setMode("json");
+          onInput(true);
+          toast("Loaded " + f.name);
+        };
+        reader.readAsText(f);
+        this.value = "";
+      });
+
+      /* Drag & drop onto the input pane */
+      var pane = $("input-pane");
+      ["dragenter", "dragover"].forEach(function (ev) {
+        pane.addEventListener(ev, function (e) { e.preventDefault(); pane.classList.add("dragging"); });
+      });
+      ["dragleave", "drop"].forEach(function (ev) {
+        pane.addEventListener(ev, function (e) { e.preventDefault(); pane.classList.remove("dragging"); });
+      });
+      pane.addEventListener("drop", function (e) {
+        var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (!f) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          inputEl.value = String(reader.result || "");
+          onInput(true);
+          toast("Loaded " + f.name);
+        };
+        reader.readAsText(f);
+      });
+
+      /* ============================== Copy / download ============================== */
+      copyBtn.addEventListener("click", function () {
+        if (!state.lastOutput) return;
+        function done() { toast("Output copied — " + fmtBytes(state.lastOutput.length)); }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(state.lastOutput).then(done).catch(function () { fallbackCopy(); });
+        } else { fallbackCopy(); }
+        function fallbackCopy() {
+          var ta = document.createElement("textarea");
+          ta.value = state.lastOutput;
+          ta.style.position = "fixed"; ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand("copy"); done(); }
+          catch (e) { toast("Copy failed — select the output and copy manually"); }
+          document.body.removeChild(ta);
+        }
+      });
+      downloadBtn.addEventListener("click", function () {
+        if (!state.lastOutput) return;
+        var isJson = state.mode === "json";
+        var blob = new Blob([state.lastOutput], { type: isJson ? "application/json" : "text/plain" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = isJson ? "formatted.json" : "prettified.log.txt";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 500);
+        toast("Downloaded " + a.download);
+      });
+
+      /* ============================== Input events ============================== */
+      var debounce = null;
+      function onInput(runNow) {
+        renderGutter();
+        if (state.mode === "log") {
+          clearTimeout(debounce);
+          debounce = setTimeout(function () { runLogs(false); }, 250);
+          if (runNow) { clearTimeout(debounce); runLogs(false); }
+        } else if (runNow) {
+          runJSON(null);
+        } else {
+          clearTimeout(debounce);
+          debounce = setTimeout(validateLive, 300);
+        }
+      }
+      inputEl.addEventListener("input", function () { onInput(false); });
+      inputEl.addEventListener("paste", function () { setTimeout(function () { onInput(true); }, 30); });
+      $("log-search").addEventListener("input", function () { if (state.mode === "log") renderLogs(); });
+
+      document.addEventListener("keydown", function (e) {
+        var mod = e.metaKey || e.ctrlKey;
+        if (mod && e.key === "Enter") {
+          e.preventDefault();
+          if (state.mode === "json") runJSON("format"); else runLogs(true);
+        } else if (mod && e.shiftKey && (e.key === "M" || e.key === "m")) {
+          if (state.mode === "json") { e.preventDefault(); runJSON("minify"); }
+        }
+      });
+
+      /* ============================== Init ============================== */
+      buildChips([]);
+      defaultStats();
+      renderGutter();
+      inputEl.value = JSON_SAMPLE;
+      renderGutter();
+      runJSON(null);
+    </script>
+  </body>
+</html>
